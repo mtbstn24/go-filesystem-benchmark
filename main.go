@@ -100,6 +100,6 @@ func main() {
 		fmt.Fprintf(w, "FileSize (KB): %d, AvgReadDuration (ms): %f\n", maxFileSize/1024, readDuration)
 	})
 
-	http.ListenAndServe(":8080", nil)
 	fmt.Println("App listening in port 8080.")
+	http.ListenAndServe(":8080", nil)
 }
