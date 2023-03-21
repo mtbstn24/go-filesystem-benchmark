@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -100,12 +101,28 @@ func multipleFileProcess() {
 	csvData = append(csvData, []string{
 		"FileSize (KB)", "Write Duration (ms)", "Read Duration (ms)", "Read and Write Duration (ms)",
 	})
-	// for _, item := range finalDurations {
-	// 	csvData = append(csvData, []string{item})
-	// }
+	header := []string{"FileSize (KB)", "Write Duration (ms)", "Read Duration (ms)", "Read and Write Duration (ms)"}
+	rows := []string{strings.Join(header, ",")}
+
+	for _, item := range finalDurations {
+		row := []string{fmt.Sprintf("%d", item["Filesize"]), fmt.Sprintf("%f", item["WriteDuration"]), fmt.Sprintf("%f", item["ReadDuration"])}
+		rows = append(rows, strings.Join(row, ","))
+	}
+	csvString := strings.Join(rows, "\n")
+	fmt.Println(csvString)
+	csvfilePath := filepath.Join(fileDir, fmt.Sprintf("csvString.csv"))
+	os.WriteFile(csvfilePath, []byte(csvString), os.ModePerm)
+	status = true
 }
 
 func main() {
+
+	http.HandleFunc("/file/", func(w http.ResponseWriter, r *http.Request) {
+		multipleFileProcess()
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/csv")
+		w.Write([]byte(csvString))
+	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Connection successful.")
@@ -117,17 +134,6 @@ func main() {
 			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations", name)
 		}
 
-	})
-
-	http.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
-		writeProcess(minfileSize)
-		fmt.Fprintf(w, "FileSize (KB): %d, AvgWriteDuration (ms): %f\n", minfileSize/1024, writeDuration)
-		readProcess(minfileSize)
-		fmt.Fprintf(w, "FileSize (KB): %d, AvgReadDuration (ms): %f\n", minfileSize/1024, readDuration)
-		writeProcess(maxFileSize)
-		fmt.Fprintf(w, "FileSize (KB): %d, AvgWriteDuration (ms): %f\n", maxFileSize/1024, writeDuration)
-		readProcess(maxFileSize)
-		fmt.Fprintf(w, "FileSize (KB): %d, AvgReadDuration (ms): %f\n", maxFileSize/1024, readDuration)
 	})
 
 	fmt.Println("App listening in port 8080.")
