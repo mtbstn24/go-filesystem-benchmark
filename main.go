@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -22,6 +23,7 @@ var (
 	filesizeInKB                int
 	csvString                   string
 	filePath                    string
+	status                      bool
 )
 
 func writeProcess(fileSize int) {
@@ -75,7 +77,52 @@ func readProcess(fileSize int) {
 	fmt.Printf("FileSize (KB): %d, AvgDuration (ms): %f\n", fileSize/1024, readDuration)
 }
 
+func fileProcess(filesize int) {
+	writeProcess(filesize)
+	readProcess(filesize)
+	filesizeInKB = filesize / 1024
+	finalDurations = append(finalDurations, map[string]interface{}{
+		"Filesize":          filesizeInKB,
+		"WriteDuration":     writeDuration,
+		"ReadDuration":      readDuration,
+		"ReadWriteDuration": writeDuration + readDuration,
+	})
+}
+
+func multipleFileProcess() {
+	status = false
+	writeDurations = make([]map[string]interface{}, 0)
+	readDurations = make([]map[string]interface{}, 0)
+	for filesize := minfileSize; filesize <= maxFileSize; filesize = filesize + 1024*1024*2 {
+		fileProcess(filesize)
+	}
+	fmt.Println(finalDurations)
+	var csvData [][]string
+	csvData = append(csvData, []string{
+		"FileSize (KB)", "Write Duration (ms)", "Read Duration (ms)", "Read and Write Duration (ms)",
+	})
+	header := []string{"FileSize (KB)", "Write Duration (ms)", "Read Duration (ms)", "Read and Write Duration (ms)"}
+	rows := []string{strings.Join(header, ",")}
+
+	for _, item := range finalDurations {
+		row := []string{fmt.Sprintf("%d", item["Filesize"]), fmt.Sprintf("%f", item["WriteDuration"]), fmt.Sprintf("%f", item["ReadDuration"])}
+		rows = append(rows, strings.Join(row, ","))
+	}
+	csvString := strings.Join(rows, "\n")
+	fmt.Println(csvString)
+	csvfilePath := filepath.Join(fileDir, fmt.Sprintf("csvString.csv"))
+	os.WriteFile(csvfilePath, []byte(csvString), os.ModePerm)
+	status = true
+}
+
 func main() {
+
+	http.HandleFunc("/file/", func(w http.ResponseWriter, r *http.Request) {
+		multipleFileProcess()
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/csv")
+		w.Write([]byte(csvString))
+	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Connection successful.")
@@ -87,17 +134,6 @@ func main() {
 			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations", name)
 		}
 
-	})
-
-	http.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
-		writeProcess(minfileSize)
-		fmt.Fprintf(w, "FileSize (KB): %d, AvgWriteDuration (ms): %f\n", minfileSize/1024, writeDuration)
-		readProcess(minfileSize)
-		fmt.Fprintf(w, "FileSize (KB): %d, AvgReadDuration (ms): %f\n", minfileSize/1024, readDuration)
-		writeProcess(maxFileSize)
-		fmt.Fprintf(w, "FileSize (KB): %d, AvgWriteDuration (ms): %f\n", maxFileSize/1024, writeDuration)
-		readProcess(maxFileSize)
-		fmt.Fprintf(w, "FileSize (KB): %d, AvgReadDuration (ms): %f\n", maxFileSize/1024, readDuration)
 	})
 
 	fmt.Println("App listening in port 8080.")
