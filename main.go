@@ -22,6 +22,7 @@ var (
 	filesizeInKB                int
 	csvString                   string
 	filePath                    string
+	status                      bool
 )
 
 func writeProcess(fileSize int) {
@@ -73,6 +74,35 @@ func readProcess(fileSize int) {
 
 	fmt.Println(readDurations)
 	fmt.Printf("FileSize (KB): %d, AvgDuration (ms): %f\n", fileSize/1024, readDuration)
+}
+
+func fileProcess(filesize int) {
+	writeProcess(filesize)
+	readProcess(filesize)
+	filesizeInKB = filesize / 1024
+	finalDurations = append(finalDurations, map[string]interface{}{
+		"Filesize":          filesizeInKB,
+		"WriteDuration":     writeDuration,
+		"ReadDuration":      readDuration,
+		"ReadWriteDuration": writeDuration + readDuration,
+	})
+}
+
+func multipleFileProcess() {
+	status = false
+	writeDurations = make([]map[string]interface{}, 0)
+	readDurations = make([]map[string]interface{}, 0)
+	for filesize := minfileSize; filesize <= maxFileSize; filesize = filesize + 1024*1024*2 {
+		fileProcess(filesize)
+	}
+	fmt.Println(finalDurations)
+	var csvData [][]string
+	csvData = append(csvData, []string{
+		"FileSize (KB)", "Write Duration (ms)", "Read Duration (ms)", "Read and Write Duration (ms)",
+	})
+	// for _, item := range finalDurations {
+	// 	csvData = append(csvData, []string{item})
+	// }
 }
 
 func main() {
