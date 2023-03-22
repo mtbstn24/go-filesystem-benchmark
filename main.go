@@ -2,18 +2,22 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 const (
-	fileDir     = "../tmp/"
 	minfileSize = 1024 * 10         // 10KB
 	maxFileSize = 1024 * 1024 * 100 // 100MB
 )
+
+var fileDir string
 
 var (
 	writeDurations              []map[string]interface{}
@@ -97,18 +101,14 @@ func multipleFileProcess() {
 		fileProcess(filesize)
 	}
 	fmt.Println(finalDurations)
-	var csvData [][]string
-	csvData = append(csvData, []string{
-		"FileSize (KB)", "Write Duration (ms)", "Read Duration (ms)", "Read and Write Duration (ms)",
-	})
 	header := []string{"FileSize (KB)", "Write Duration (ms)", "Read Duration (ms)", "Read and Write Duration (ms)"}
 	rows := []string{strings.Join(header, ",")}
 
 	for _, item := range finalDurations {
-		row := []string{fmt.Sprintf("%d", item["Filesize"]), fmt.Sprintf("%f", item["WriteDuration"]), fmt.Sprintf("%f", item["ReadDuration"])}
+		row := []string{fmt.Sprintf("%d", item["Filesize"]), fmt.Sprintf("%f", item["WriteDuration"]), fmt.Sprintf("%f", item["ReadDuration"]), fmt.Sprintf("%f", item["ReadWriteDuration"])}
 		rows = append(rows, strings.Join(row, ","))
 	}
-	csvString := strings.Join(rows, "\n")
+	csvString = strings.Join(rows, "\n")
 	fmt.Println(csvString)
 	csvfilePath := filepath.Join(fileDir, fmt.Sprintf("csvString.csv"))
 	os.WriteFile(csvfilePath, []byte(csvString), os.ModePerm)
@@ -117,11 +117,28 @@ func multipleFileProcess() {
 
 func main() {
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	fileDir = os.Getenv("DIR")
+
 	http.HandleFunc("/file/", func(w http.ResponseWriter, r *http.Request) {
 		multipleFileProcess()
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/csv")
 		w.Write([]byte(csvString))
+	})
+
+	http.HandleFunc("/response/", func(w http.ResponseWriter, r *http.Request) {
+		if status == true {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "%s", csvString)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(w, "Respond not found or Process not completed. \nMake a request to /file endpoint first. \nWait for some time and try again if you have already requested /file endpoint.")
+		}
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +148,7 @@ func main() {
 			fmt.Println("Error resolving hostname:", err)
 			return
 		} else {
-			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations", name)
+			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations \nUse the /response endpoint to get the csv string of the response of Benchmarking the File oprations", name)
 		}
 
 	})
