@@ -30,8 +30,7 @@ var (
 	status                      bool
 )
 
-func writeProcess(fileSize int) {
-	filePath = filepath.Join(fileDir, fmt.Sprintf("file-%d", fileSize))
+func writeProcess(fileSize int, filePath string) {
 
 	writeDurations = make([]map[string]interface{}, 0)
 	testData := make([]byte, fileSize)
@@ -56,8 +55,7 @@ func writeProcess(fileSize int) {
 	fmt.Printf("FileSize (KB): %d, AvgDuration (ms): %f\n", fileSize/1024, writeDuration)
 }
 
-func readProcess(fileSize int) {
-	filePath = filepath.Join(fileDir, fmt.Sprintf("file-%d", fileSize))
+func readProcess(fileSize int, filePath string) {
 
 	readDurations = make([]map[string]interface{}, 0)
 	var sum float64
@@ -76,14 +74,16 @@ func readProcess(fileSize int) {
 	}
 
 	readDuration = sum / 10
+	os.Remove(filePath)
 
 	fmt.Println(readDurations)
 	fmt.Printf("FileSize (KB): %d, AvgDuration (ms): %f\n", fileSize/1024, readDuration)
 }
 
 func fileProcess(filesize int) {
-	writeProcess(filesize)
-	readProcess(filesize)
+	filePath = filepath.Join(fileDir, fmt.Sprintf("file-%d", filesize))
+	writeProcess(filesize, filePath)
+	readProcess(filesize, filePath)
 	filesizeInKB = filesize / 1024
 	finalDurations = append(finalDurations, map[string]interface{}{
 		"Filesize":          filesizeInKB,
