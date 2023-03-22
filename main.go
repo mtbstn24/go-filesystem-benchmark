@@ -124,20 +124,21 @@ func main() {
 
 	fileDir = os.Getenv("DIR")
 
-	http.HandleFunc("/file/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
 		multipleFileProcess()
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/csv")
 		w.Write([]byte(csvString))
 	})
 
-	http.HandleFunc("/response/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/response", func(w http.ResponseWriter, r *http.Request) {
 		if status == true {
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprintf(w, "%s", csvString)
+			w.Header().Set("Content-Type", "text/csv")
+			w.Write([]byte(csvString))
 		} else {
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprintf(w, "Respond not found or Process not completed. \nMake a request to /file endpoint first. \nWait for some time and try again if you have already requested /file endpoint.")
+			fmt.Fprintf(w, "Respond not found or Process not completed. \nMake a request to /file endpoint first. \nWait for some time and try again if you have already requested /file endpoint.\n")
 		}
 	})
 
@@ -148,7 +149,7 @@ func main() {
 			fmt.Println("Error resolving hostname:", err)
 			return
 		} else {
-			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations \nUse the /response endpoint to get the csv string of the response of Benchmarking the File oprations", name)
+			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations \nUse the /response endpoint to get the csv string of the response of Benchmarking the File oprations\n", name)
 		}
 
 	})
