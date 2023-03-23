@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -118,11 +119,21 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		//log.Fatal("Error loading .env file")
 		println(".env file does not exist. Use the environment variables set by the deployment environment")
 	}
 
 	fileDir = os.Getenv("DIR")
+
+	http.HandleFunc("/json", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/csv")
+		jsonData, err := json.MarshalIndent(sampleJson, "", " ")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Fprint(w, string(jsonData))
+	})
 
 	http.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
 		multipleFileProcess()
@@ -156,4 +167,97 @@ func main() {
 
 	fmt.Println("App listening in port 8080.")
 	http.ListenAndServe(":8080", nil)
+}
+
+var sampleJson []map[string]interface{} = []map[string]interface{}{
+	{
+		"_id":        "641bdaaaf8e98d12763f22d4",
+		"index":      0,
+		"guid":       "b06a15d1-526a-473f-9209-e0ca22b7f90a",
+		"isActive":   false,
+		"balance":    "$2,086.82",
+		"picture":    "http://placehold.it/32x32",
+		"age":        40,
+		"eyeColor":   "green",
+		"name":       "Arline Dudley",
+		"gender":     "female",
+		"company":    "LUNCHPOD",
+		"email":      "arlinedudley@lunchpod.com",
+		"phone":      "+1 (987) 549-3761",
+		"address":    "111 Moore Street, Walton, Texas, 8265",
+		"about":      "Ad nulla eiusmod voluptate laborum in consectetur mollit pariatur officia aliqua adipisicing est ad. Quis anim aliqua exercitation sit cillum irure nisi quis labore. Dolor nulla enim elit qui amet ipsum exercitation. Eiusmod adipisicing culpa dolore duis est voluptate nulla. Qui sint irure qui irure excepteur laborum pariatur ipsum ipsum Lorem ut irure anim.\r\n",
+		"registered": "2022-06-09T10:09:42 -06:-30",
+		"latitude":   -78.980394,
+		"longitude":  33.205681,
+		"tags": []string{
+			"deserunt",
+			"officia",
+			"id",
+			"pariatur",
+			"sunt",
+			"excepteur",
+			"consectetur",
+		},
+		"friends": []map[string]interface{}{
+			{
+				"id":   0,
+				"name": "Julianne Wright",
+			},
+			{
+				"id":   1,
+				"name": "David Kane",
+			},
+			{
+				"id":   2,
+				"name": "Todd Holman",
+			},
+		},
+		"greeting":      "Hello, Arline Dudley! You have 7 unread messages.",
+		"favoriteFruit": "banana",
+	},
+	{
+		"_id":        "641bdaaa0a5b4af1047d0dde",
+		"index":      1,
+		"guid":       "e097b36c-3a93-443e-9a3b-17da59dafcab",
+		"isActive":   false,
+		"balance":    "$2,865.23",
+		"picture":    "http://placehold.it/32x32",
+		"age":        29,
+		"eyeColor":   "brown",
+		"name":       "Marina Herrera",
+		"gender":     "female",
+		"company":    "BLEEKO",
+		"email":      "marinaherrera@bleeko.com",
+		"phone":      "+1 (913) 512-2676",
+		"address":    "880 Amherst Street, Kenmar, California, 5070",
+		"about":      "Proident sunt magna elit duis officia in esse labore tempor ipsum id ipsum. Sunt nisi nostrud anim veniam est nisi cupidatat ut minim esse laborum elit. Do cupidatat officia reprehenderit incididunt sit eiusmod excepteur dolor commodo esse nulla. Sit aute nisi veniam cillum aliqua.\r\n",
+		"registered": "2015-11-12T01:02:54 -06:-30",
+		"latitude":   65.668736,
+		"longitude":  53.450258,
+		"tags": []string{
+			"cillum",
+			"do",
+			"cupidatat",
+			"minim",
+			"do",
+			"sint",
+			"ullamco",
+		},
+		"friends": []map[string]interface{}{
+			{
+				"id":   0,
+				"name": "Newman Hamilton",
+			},
+			{
+				"id":   1,
+				"name": "Christi Bond",
+			},
+			{
+				"id":   2,
+				"name": "Nunez Saunders",
+			},
+		},
+		"greeting":      "Hello, Marina Herrera! You have 2 unread messages.",
+		"favoriteFruit": "banana",
+	},
 }
