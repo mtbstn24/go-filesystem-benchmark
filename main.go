@@ -139,6 +139,7 @@ func main() {
 		if readErr != nil {
 			log.Fatal(readErr)
 		}
+		resp.Body.Close()
 		err1 := json.Unmarshal(body, &data)
 		if err1 != nil {
 			fmt.Println(err)
