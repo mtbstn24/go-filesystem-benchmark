@@ -145,9 +145,9 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		jsonData, err := json.MarshalIndent(data, "", " ")
-		if err != nil {
-			fmt.Println(err)
+		jsonData, err2 := json.MarshalIndent(data, "", " ")
+		if err2 != nil {
+			fmt.Println(err2)
 			return
 		}
 		fmt.Fprint(w, string(jsonData))
