@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -123,6 +125,32 @@ func main() {
 	}
 
 	fileDir = os.Getenv("DIR")
+
+	http.HandleFunc("/externalapi", func(w http.ResponseWriter, r *http.Request) {
+		resp, err := http.Get("https://jsonplaceholder.typicode.com/users")
+		if err != nil {
+			fmt.Printf("Cannot fetch URL : %v", err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/csv")
+		var data []map[string]interface{}
+		body, readErr := ioutil.ReadAll(resp.Body)
+		if readErr != nil {
+			log.Fatal(readErr)
+		}
+		err1 := json.Unmarshal(body, &data)
+		if err1 != nil {
+			fmt.Println(err)
+			return
+		}
+		jsonData, err := json.MarshalIndent(data, "", " ")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Fprint(w, string(jsonData))
+	})
 
 	http.HandleFunc("/json", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
