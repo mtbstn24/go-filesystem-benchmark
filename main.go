@@ -188,7 +188,7 @@ func main() {
 			fmt.Println("Error resolving hostname:", err)
 			return
 		} else {
-			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations \nUse the /response endpoint to get the csv string of the response of Benchmarking the File oprations\nUse the /json endpoint to get static JSON content \n", name)
+			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations \nUse the /response endpoint to get the csv string of the response of Benchmarking the File oprations\nUse the /json endpoint to get static JSON content \nUse the /externalapi endpoint to get a sample json response from an external API\n\n", name)
 		}
 
 	})
