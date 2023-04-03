@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -116,6 +117,13 @@ func multipleFileProcess() {
 	status = true
 }
 
+func fibonacci(n int) int {
+	if n <= 1 {
+		return n
+	}
+	return fibonacci(n-1) + fibonacci(n-2)
+}
+
 func main() {
 
 	err := godotenv.Load()
@@ -124,6 +132,11 @@ func main() {
 	}
 
 	fileDir = os.Getenv("DIR")
+
+	type FibonacciResponse struct {
+		Fibonacci           int     `json:"fibonacciNo"`
+		CalculationDuration float64 `json:"CalculationDuration"`
+	}
 
 	http.HandleFunc("/externalapi", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := http.Get("https://jsonplaceholder.typicode.com/users")
@@ -180,6 +193,39 @@ func main() {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprintf(w, "Respond not found or Process not completed. \nMake a request to /file endpoint first. \nWait for some time and try again if you have already requested /file endpoint.\n")
 		}
+	})
+
+	http.HandleFunc("/fibonacci", func(w http.ResponseWriter, r *http.Request) {
+		numStr := r.URL.Query().Get("num")
+
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(w, "Invalid value for query parameter 'num': %s", numStr)
+			return
+		}
+
+		var calDuration float64
+		startTime := time.Now()
+		fib := fibonacci(num)
+
+		calDuration = time.Since(startTime).Seconds() * 1000
+
+		response := FibonacciResponse{
+			Fibonacci:           fib,
+			CalculationDuration: calDuration,
+		}
+
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "Error marshaling JSON response: %s", err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResponse)
+
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
