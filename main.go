@@ -167,9 +167,12 @@ func main() {
 	})
 
 	http.HandleFunc("/json", func(w http.ResponseWriter, r *http.Request) {
+		sJson := append(sampleJson, map[string]interface{}{
+			"time": time.Now(),
+		})
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/csv")
-		jsonData, err := json.MarshalIndent(sampleJson, "", " ")
+		jsonData, err := json.MarshalIndent(sJson, "", " ")
 		if err != nil {
 			fmt.Println(err)
 			return
