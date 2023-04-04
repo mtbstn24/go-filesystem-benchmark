@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -117,7 +116,7 @@ func multipleFileProcess() {
 	status = true
 }
 
-func fibonacci(n int) int {
+func fibonacci(n int32) int32 {
 	if n <= 1 {
 		return n
 	}
@@ -133,9 +132,10 @@ func main() {
 
 	fileDir = os.Getenv("DIR")
 
-	type FibonacciResponse struct {
-		Fibonacci           int     `json:"fibonacciNo"`
-		CalculationDuration float64 `json:"CalculationDuration"`
+	type Response struct {
+		Number                     []int32   `json:"number"`
+		CalculationDurationAverage []float64 `json:"CalculationDurationAverage"`
+		Fibonacci                  []int32   `json:"Fibonacci"`
 	}
 
 	http.HandleFunc("/externalapi", func(w http.ResponseWriter, r *http.Request) {
@@ -199,27 +199,26 @@ func main() {
 	})
 
 	http.HandleFunc("/fibonacci", func(w http.ResponseWriter, r *http.Request) {
-		numStr := r.URL.Query().Get("num")
-
-		num, err := strconv.Atoi(numStr)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Invalid value for query parameter 'num': %s", numStr)
-			return
-		}
-
+		calDurationAvgs := make([]float64, 0)
+		number := []int32{20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40}
+		fibonacciArray := make([]int32, 0)
+		var result int32
 		var calDuration float64
-		startTime := time.Now()
-		fib := fibonacci(num)
-
-		calDuration = time.Since(startTime).Seconds() * 1000
-
-		response := FibonacciResponse{
-			Fibonacci:           fib,
-			CalculationDuration: calDuration,
+		for i := 0; i < 11; i++ {
+			calDurationSum := float64(0)
+			for j := 0; j < 5; j++ {
+				startTime := time.Now()
+				result = fibonacci(number[i])
+				calDuration = time.Since(startTime).Seconds() * 1000
+				calDurationSum += calDuration
+			}
+			calDurationAvg := float64(calDurationSum) / 5.0
+			calDurationAvgs = append(calDurationAvgs, calDurationAvg)
+			fibonacciArray = append(fibonacciArray, result)
 		}
+		res := Response{Number: number, CalculationDurationAverage: calDurationAvgs, Fibonacci: fibonacciArray}
 
-		jsonResponse, err := json.Marshal(response)
+		jsonResponse, err := json.Marshal(res)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Error marshaling JSON response: %s", err)
