@@ -24,9 +24,11 @@ var (
 	writeDurations              []map[string]interface{}
 	readDurations               []map[string]interface{}
 	finalDurations              []map[string]interface{}
+	fibDurations                []map[string]interface{}
 	writeDuration, readDuration float64
 	filesizeInKB                int
 	csvString                   string
+	fibString                   string
 	filePath                    string
 	status                      bool
 )
@@ -116,11 +118,47 @@ func multipleFileProcess() {
 	status = true
 }
 
-func fibonacci(n int32) int32 {
+func fibonacci(n int) int {
 	if n <= 1 {
 		return n
 	}
 	return fibonacci(n-1) + fibonacci(n-2)
+}
+
+func getFibString() {
+	calDurationAvgs := make([]float64, 0)
+	number := []int{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44}
+	fibonacciArray := make([]int, 0)
+	fibDurations = make([]map[string]interface{}, 0)
+	var result int
+	var calDuration float64
+	for i := 0; i < len(number); i++ {
+		calDurationSum := float64(0)
+		for j := 0; j < 5; j++ {
+			startTime := time.Now()
+			result = fibonacci(number[i])
+			calDuration = time.Since(startTime).Seconds() * 1000
+			calDurationSum += calDuration
+		}
+		calDurationAvg := float64(calDurationSum) / 5.0
+		calDurationAvgs = append(calDurationAvgs, calDurationAvg)
+		fibonacciArray = append(fibonacciArray, result)
+		fibDurations = append(fibDurations, map[string]interface{}{
+			"FibonacciNumber": number[i],
+			"FibonacciValue":  result,
+			"CalDuration":     calDurationAvg,
+		})
+	}
+
+	Fheader := []string{"Fibonacci Number", "Fibonacci Value", "Calculation Duration (ms)"}
+	Frows := []string{strings.Join(Fheader, ",")}
+
+	for _, item := range fibDurations {
+		row := []string{fmt.Sprintf("%d", item["FibonacciNumber"]), fmt.Sprintf("%d", item["FibonacciValue"]), fmt.Sprintf("%f", item["CalDuration"])}
+		Frows = append(Frows, strings.Join(row, ","))
+	}
+	fibString = strings.Join(Frows, "\n")
+	fmt.Println(fibString)
 }
 
 func main() {
@@ -131,12 +169,6 @@ func main() {
 	}
 
 	fileDir = os.Getenv("DIR")
-
-	type Response struct {
-		Number                     []int32   `json:"number"`
-		CalculationDurationAverage []float64 `json:"CalculationDurationAverage"`
-		Fibonacci                  []int32   `json:"Fibonacci"`
-	}
 
 	http.HandleFunc("/externalapi", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := http.Get("https://jsonplaceholder.typicode.com/users")
@@ -199,35 +231,21 @@ func main() {
 	})
 
 	http.HandleFunc("/fibonacci", func(w http.ResponseWriter, r *http.Request) {
-		calDurationAvgs := make([]float64, 0)
-		number := []int32{20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40}
-		fibonacciArray := make([]int32, 0)
-		var result int32
-		var calDuration float64
-		for i := 0; i < 11; i++ {
-			calDurationSum := float64(0)
-			for j := 0; j < 5; j++ {
-				startTime := time.Now()
-				result = fibonacci(number[i])
-				calDuration = time.Since(startTime).Seconds() * 1000
-				calDurationSum += calDuration
-			}
-			calDurationAvg := float64(calDurationSum) / 5.0
-			calDurationAvgs = append(calDurationAvgs, calDurationAvg)
-			fibonacciArray = append(fibonacciArray, result)
+		getFibString()
+		w.Header().Set("Content-Type", "application/csv")
+		w.Write([]byte(fibString))
+
+	})
+
+	http.HandleFunc("/fibresponse", func(w http.ResponseWriter, r *http.Request) {
+		if fibString != "" {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/csv")
+			w.Write([]byte(fibString))
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(w, "Respond not found or Process not completed. \nMake a request to /fibonacci endpoint first. \nWait for some time and try again if you have already requested /file endpoint.\n")
 		}
-		res := Response{Number: number, CalculationDurationAverage: calDurationAvgs, Fibonacci: fibonacciArray}
-
-		jsonResponse, err := json.Marshal(res)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Error marshaling JSON response: %s", err)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
-
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -237,9 +255,8 @@ func main() {
 			fmt.Println("Error resolving hostname:", err)
 			return
 		} else {
-			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations \nUse the /response endpoint to get the csv string of the response of Benchmarking the File oprations\nUse the /json endpoint to get static JSON content \nUse the /externalapi endpoint to get a sample json response from an external API \nUse the /fibanacci/n endpoint to get the nth fibonacci number and Duration\n\n", name)
+			fmt.Fprintf(w, "Connection successful to the host: %s \nUse the /file endpoint to Benchmark the File oprations \nUse the /response endpoint to get the csv string of the response of Benchmarking the File oprations\nUse the /json endpoint to get static JSON content \nUse the /externalapi endpoint to get a sample json response from an external API \nUse the /fibonacci endpoint to calculate Fibonacci numbers and Durations\nUse the /fibresponse endpoint to get the Fibonacci Durations as csv\n\n", name)
 		}
-
 	})
 
 	fmt.Println("App listening in port 8080.")
