@@ -127,12 +127,12 @@ func fibonacci(n int) int {
 
 func getFibString() {
 	calDurationAvgs := make([]float64, 0)
-	number := []int{20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40}
+	number := []int{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44}
 	fibonacciArray := make([]int, 0)
 	fibDurations = make([]map[string]interface{}, 0)
 	var result int
 	var calDuration float64
-	for i := 0; i < 11; i++ {
+	for i := 0; i < len(number); i++ {
 		calDurationSum := float64(0)
 		for j := 0; j < 5; j++ {
 			startTime := time.Now()
